@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/all.dart';
+import 'package:riverpod_statenotifier_tutorial/application/weather_notifier.dart';
 import 'package:riverpod_statenotifier_tutorial/infrastructure/model/weather.dart';
+import 'package:riverpod_statenotifier_tutorial/providers.dart';
 
 class WeatherSearchPage extends StatefulWidget {
   @override
@@ -16,8 +19,33 @@ class _WeatherSearchPageState extends State<WeatherSearchPage> {
       body: Container(
         padding: EdgeInsets.symmetric(vertical: 16),
         alignment: Alignment.center,
-        // TODO: Implement with StateNotifier
-        child: buildInitialInput(),
+        child: ProviderListener(
+          provider: weatherNotifierProvider.state,
+          onChange: (context, state) {
+            if (state is WeatherError) {
+              Scaffold.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(state.message),
+                ),
+              );
+            }
+          },
+          child: Consumer(
+            builder: (context, watch, child) {
+              final state = watch(weatherNotifierProvider.state);
+              if (state is WeatherInitial) {
+                return buildInitialInput();
+              } else if (state is WeatherLoading) {
+                return buildLoading();
+              } else if (state is WeatherLoaded) {
+                return buildColumnWithData(state.weather);
+              } else {
+                // (state is WeatherError)
+                return buildInitialInput();
+              }
+            },
+          ),
+        ),
       ),
     );
   }
@@ -74,6 +102,6 @@ class CityInputField extends StatelessWidget {
   }
 
   void submitCityName(BuildContext context, String cityName) {
-    // TODO: Get weather for the city
+    context.read(weatherNotifierProvider).getWeather(cityName);
   }
 }
